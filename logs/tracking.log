@@ -1,1 +1,2 @@
-2026-09-28 11:51:24 - INFO - vehicle_tracking - Vehicle Tracking process completed successfully.
+2026-09-28 12:30:51 - INFO - vehicle_tracking - Initializing Vehicle Tracking System...
+2026-09-28 12:49:47 - WARNING - vehicle_tracking - Input interrupted by user during vehicle selection. Exiting.

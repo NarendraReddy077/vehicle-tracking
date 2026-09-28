@@ -167,7 +167,7 @@ try:
             continue
 
         try:
-            annotated_frame = result.plot(labels=False)
+            annotated_frame = result.plot(labels=False, conf=False)
         except Exception:
             logger.exception(f"Failed to annotate frame {frame_number}. Using raw frame instead.")
             annotated_frame = frame.copy()
