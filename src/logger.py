@@ -25,7 +25,7 @@ def get_logger(name: str = "vehicle_tracking") -> logging.Logger:
 
     file_handler = RotatingFileHandler(
         LOG_FILE,
-        maxBytes=2 * 1024,
+        maxBytes=5 * 1024,
         backupCount=3,
         encoding="utf-8"
     )

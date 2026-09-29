@@ -1,2 +1,38 @@
-2026-09-28 12:30:51 - INFO - vehicle_tracking - Initializing Vehicle Tracking System...
-2026-09-28 12:49:47 - WARNING - vehicle_tracking - Input interrupted by user during vehicle selection. Exiting.
+2026-09-29 11:02:55 - INFO - vehicle_tracking - Video opened: 1280x720 @ 29.86 FPS
+2026-09-29 11:02:55 - INFO - vehicle_tracking - Video writer initialized for: output_videos/output_tracked.mp4
+2026-09-29 11:02:55 - INFO - vehicle_tracking - Starting video tracking stream...
+2026-09-29 11:03:03 - INFO - vehicle_tracking - Vehicle crossed: MOTORCYCLE (ID: 4) | Category count: 1 | Total crossed: 1
+2026-09-29 11:03:04 - INFO - vehicle_tracking - Vehicle crossed: CAR (ID: 3) | Category count: 1 | Total crossed: 2
+2026-09-29 11:03:04 - INFO - vehicle_tracking - Vehicle crossed: MOTORCYCLE (ID: 7) | Category count: 2 | Total crossed: 3
+2026-09-29 11:03:09 - INFO - vehicle_tracking - Vehicle crossed: TRUCK (ID: 11) | Category count: 1 | Total crossed: 4
+2026-09-29 11:03:09 - INFO - vehicle_tracking - Vehicle crossed: MOTORCYCLE (ID: 14) | Category count: 3 | Total crossed: 5
+2026-09-29 11:03:10 - INFO - vehicle_tracking - Vehicle crossed: MOTORCYCLE (ID: 18) | Category count: 4 | Total crossed: 6
+2026-09-29 11:03:12 - INFO - vehicle_tracking - Vehicle crossed: CAR (ID: 19) | Category count: 2 | Total crossed: 7
+2026-09-29 11:03:13 - INFO - vehicle_tracking - Vehicle crossed: MOTORCYCLE (ID: 20) | Category count: 5 | Total crossed: 8
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Video processing stopped by user ('q' key pressed).
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Resources released and windows closed.
+2026-09-29 11:03:15 - INFO - vehicle_tracking - ========== Final Results ==========
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Total Cars: 2
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Total Motorcycles: 5
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Total Buss: 0
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Total Trucks: 1
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Total vehicles crossed: 8
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Output video saved to: output_videos/output_tracked.mp4
+2026-09-29 11:03:15 - INFO - vehicle_tracking - Vehicle Tracking process completed successfully.
+2026-09-29 11:04:10 - INFO - vehicle_tracking - Initializing Vehicle Tracking System...
+2026-09-29 11:04:11 - INFO - vehicle_tracking - Selected vehicles for tracking: car
+2026-09-29 11:04:11 - INFO - vehicle_tracking - Loading YOLO model from: models/yolo26n.pt
+2026-09-29 11:04:11 - INFO - vehicle_tracking - YOLO model loaded successfully.
+2026-09-29 11:04:11 - INFO - vehicle_tracking - Opening video file: input_videos/traffic1.mp4
+2026-09-29 11:04:11 - INFO - vehicle_tracking - Video opened: 1280x720 @ 29.86 FPS
+2026-09-29 11:04:11 - INFO - vehicle_tracking - Video writer initialized for: output_videos/output_tracked.mp4
+2026-09-29 11:04:11 - INFO - vehicle_tracking - Starting video tracking stream...
+2026-09-29 11:04:20 - INFO - vehicle_tracking - Vehicle crossed: CAR (ID: 2) | Category count: 1 | Total crossed: 1
+2026-09-29 11:04:26 - INFO - vehicle_tracking - Vehicle crossed: CAR (ID: 7) | Category count: 2 | Total crossed: 2
+2026-09-29 11:04:35 - INFO - vehicle_tracking - Video processing stopped by user ('q' key pressed).
+2026-09-29 11:04:35 - INFO - vehicle_tracking - Resources released and windows closed.
+2026-09-29 11:04:35 - INFO - vehicle_tracking - ========== Final Results ==========
+2026-09-29 11:04:35 - INFO - vehicle_tracking - Total Cars: 2
+2026-09-29 11:04:35 - INFO - vehicle_tracking - Total vehicles crossed: 2
+2026-09-29 11:04:35 - INFO - vehicle_tracking - Output video saved to: output_videos/output_tracked.mp4
+2026-09-29 11:04:35 - INFO - vehicle_tracking - Vehicle Tracking process completed successfully.

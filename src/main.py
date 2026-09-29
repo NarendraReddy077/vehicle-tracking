@@ -1,3 +1,4 @@
+import os
 import sys
 import cv2
 from ultralytics import YOLO
@@ -8,11 +9,14 @@ logger.info("Initializing Vehicle Tracking System...")
 
 # Configuration
 MODEL_PATH = "models/yolo26n.pt"
-VIDEO_PATH = "input_videos/traffic.mp4"
+VIDEO_PATH = "input_videos/traffic1.mp4"
 OUTPUT_PATH = "output_videos/output_tracked.mp4"
 
 LINE_X = 500
 CONFIDENCE = 0.4
+MAX_TRACK_AGE = 30  # Max frames to retain absent tracks before pruning (occlusion tolerance)
+SPATIAL_DEDUPE_DISTANCE = 50  # Max pixel distance along Y to suppress duplicate counts from ID switches
+SPATIAL_DEDUPE_FRAMES = 15  # Frame window for spatial deduplication
 
 # COCO vehicle classes
 VEHICLE_CLASSES = {
@@ -23,11 +27,9 @@ VEHICLE_CLASSES = {
 }
 
 print("\n========== VEHICLE TRACKING ==========")
-print("Available vehicles:")
+print("Vehicle classes to track:")
 for vehicle in VEHICLE_CLASSES.keys():
     print(f"  {vehicle}")
-
-selected_vehicles = []
 
 while True:
     try:
@@ -39,11 +41,11 @@ while True:
         logger.warning("Input interrupted by user during vehicle selection. Exiting.")
         sys.exit(1)
 
-    selected_vehicles = [
+    selected_vehicles = list(dict.fromkeys(
         vehicle.strip()
         for vehicle in user_input.split(",")
         if vehicle.strip()
-    ]
+    ))
 
     if not selected_vehicles:
         logger.warning("No vehicles selected; prompting again.")
@@ -105,6 +107,10 @@ except Exception:
 
 
 try:
+    output_dir = os.path.dirname(OUTPUT_PATH)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
     out = cv2.VideoWriter(
@@ -124,8 +130,9 @@ except Exception:
     cap.release()
     sys.exit(1)
 
-previous_positions = {}
+track_history = {}  # {track_id: {"x": int, "y": int, "last_seen": int}}
 counted_ids = set()
+recent_crossings = []  # [{"x": int, "y": int, "frame": int, "vehicle_name": str}]
 
 vehicle_count = {
     vehicle: 0
@@ -152,6 +159,7 @@ try:
 
         frame_number += 1
 
+        result = None
         try:
             results = model.track(
                 frame,
@@ -161,31 +169,30 @@ try:
                 conf=CONFIDENCE,
                 verbose=False
             )
-            result = results[0]
+            if results and len(results) > 0:
+                result = results[0]
         except Exception:
-            logger.exception(f"Tracking inference failed on frame {frame_number}. Skipping frame.")
-            continue
+            logger.exception(f"Tracking inference failed on frame {frame_number}. Processing raw frame.")
 
         try:
-            annotated_frame = result.plot(labels=False, conf=False)
+            if result is not None:
+                annotated_frame = result.plot(conf=False, line_width=2, font_size=0.4)
+            else:
+                annotated_frame = frame.copy()
         except Exception:
             logger.exception(f"Failed to annotate frame {frame_number}. Using raw frame instead.")
             annotated_frame = frame.copy()
 
-        cv2.line(annotated_frame,(LINE_X, 0),(LINE_X, height),(0, 255, 0),3)
+        cv2.line(annotated_frame, (LINE_X, 0), (LINE_X, height), (0, 255, 0), 3)
 
         try:
-            if result.boxes.id is not None:
+            if result is not None and result.boxes is not None and result.boxes.id is not None:
 
                 track_ids = result.boxes.id.int().cpu().tolist()
                 boxes = result.boxes.xyxy.cpu().tolist()
                 class_ids = result.boxes.cls.int().cpu().tolist()
 
-                active_ids = set()
-
                 for track_id, box, class_id in zip(track_ids, boxes, class_ids):
-
-                    active_ids.add(track_id)
 
                     vehicle_name = next(
                         (name for name, class_id_value in VEHICLE_CLASSES.items()
@@ -200,27 +207,48 @@ try:
                         center_x = int((x1 + x2) / 2)
                         center_y = int((y1 + y2) / 2)
 
-                        cv2.circle(annotated_frame,(center_x, center_y),5,(0, 0, 255),-1)
+                        cv2.circle(annotated_frame, (center_x, center_y), 5, (0, 0, 255), -1)
 
-                        # Line crossing
-                        if track_id in previous_positions:
-                            previous_x = previous_positions[track_id]
+                        # Line crossing check (survives 1+ frame occlusion via track_history)
+                        if track_id in track_history:
+                            previous_x = track_history[track_id]["x"]
 
                             crossed = (previous_x > LINE_X and center_x <= LINE_X)
 
                             if crossed and track_id not in counted_ids:
-                                total_crossed += 1
-                                vehicle_count[vehicle_name] += 1
-                                counted_ids.add(track_id)
-
-                                logger.info(
-                                    f"Vehicle crossed: {vehicle_name.upper()} (ID: {track_id}) | "
-                                    f"Category count: {vehicle_count[vehicle_name]} | Total crossed: {total_crossed}"
+                                # Suppress duplicates caused by ID switches near the counting line
+                                is_duplicate = any(
+                                    rc["vehicle_name"] == vehicle_name and
+                                    abs(rc["y"] - center_y) < SPATIAL_DEDUPE_DISTANCE and
+                                    (frame_number - rc["frame"]) <= SPATIAL_DEDUPE_FRAMES
+                                    for rc in recent_crossings
                                 )
 
-                        previous_positions[track_id] = center_x
+                                if not is_duplicate:
+                                    total_crossed += 1
+                                    vehicle_count[vehicle_name] += 1
+                                    counted_ids.add(track_id)
+                                    recent_crossings.append({
+                                        "x": center_x,
+                                        "y": center_y,
+                                        "frame": frame_number,
+                                        "vehicle_name": vehicle_name
+                                    })
 
-                        cv2.putText(annotated_frame,f"{vehicle_name} | ID {track_id}",(x1, max(y1 - 10, 20)),cv2.FONT_HERSHEY_SIMPLEX,0.6,(0, 255, 255),2)
+                                    logger.info(
+                                        f"Vehicle crossed: {vehicle_name.upper()} (ID: {track_id}) | "
+                                        f"Category count: {vehicle_count[vehicle_name]} | Total crossed: {total_crossed}"
+                                    )
+                                else:
+                                    logger.info(
+                                        f"Duplicate crossing suppressed for ID {track_id} ({vehicle_name}) due to nearby recent count."
+                                    )
+
+                        track_history[track_id] = {
+                            "x": center_x,
+                            "y": center_y,
+                            "last_seen": frame_number
+                        }
 
                     except Exception:
                         logger.exception(
@@ -228,11 +256,18 @@ try:
                         )
                         continue
 
-                previous_positions = {
-                    tid: pos
-                    for tid, pos in previous_positions.items()
-                    if tid in active_ids
-                }
+            # Prune tracks older than MAX_TRACK_AGE (maintains history across temporary occlusions)
+            track_history = {
+                tid: data
+                for tid, data in track_history.items()
+                if (frame_number - data["last_seen"]) <= MAX_TRACK_AGE
+            }
+
+            # Prune expired spatial deduplication history
+            recent_crossings = [
+                rc for rc in recent_crossings
+                if (frame_number - rc["frame"]) <= SPATIAL_DEDUPE_FRAMES
+            ]
 
         except Exception:
             logger.exception(f"Error processing detections on frame {frame_number}.")
@@ -305,7 +340,7 @@ finally:
 
     logger.info("========== Final Results ==========")
     for vehicle, count in vehicle_count.items():
-        logger.info(f"Total {vehicle.capitalize()}s: {count}")
+        logger.info(f"{vehicle.capitalize()}: {count}")
 
     logger.info(f"Total vehicles crossed: {total_crossed}")
     logger.info(f"Output video saved to: {OUTPUT_PATH}")
