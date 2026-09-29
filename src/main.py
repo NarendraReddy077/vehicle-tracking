@@ -9,14 +9,14 @@ logger.info("Initializing Vehicle Tracking System...")
 
 # Configuration
 MODEL_PATH = "models/yolo26n.pt"
-VIDEO_PATH = "input_videos/traffic1.mp4"
+VIDEO_PATH = "input_videos/traffic2.mp4"
 OUTPUT_PATH = "output_videos/output_tracked.mp4"
 
 LINE_X = 500
 CONFIDENCE = 0.4
-MAX_TRACK_AGE = 30  # Max frames to retain absent tracks before pruning (occlusion tolerance)
-SPATIAL_DEDUPE_DISTANCE = 50  # Max pixel distance along Y to suppress duplicate counts from ID switches
-SPATIAL_DEDUPE_FRAMES = 15  # Frame window for spatial deduplication
+MAX_TRACK_AGE = 30
+SPATIAL_DEDUPE_DISTANCE = 50
+SPATIAL_DEDUPE_FRAMES = 15
 
 # COCO vehicle classes
 VEHICLE_CLASSES = {
@@ -256,18 +256,18 @@ try:
                         )
                         continue
 
-            # Prune tracks older than MAX_TRACK_AGE (maintains history across temporary occlusions)
-            track_history = {
-                tid: data
-                for tid, data in track_history.items()
-                if (frame_number - data["last_seen"]) <= MAX_TRACK_AGE
-            }
+                # Prune tracks older than MAX_TRACK_AGE (maintains history across temporary occlusions)
+                track_history = {
+                    tid: data
+                    for tid, data in track_history.items()
+                    if (frame_number - data["last_seen"]) <= MAX_TRACK_AGE
+                }
 
-            # Prune expired spatial deduplication history
-            recent_crossings = [
-                rc for rc in recent_crossings
-                if (frame_number - rc["frame"]) <= SPATIAL_DEDUPE_FRAMES
-            ]
+                # Prune expired spatial deduplication history
+                recent_crossings = [
+                    rc for rc in recent_crossings
+                    if (frame_number - rc["frame"]) <= SPATIAL_DEDUPE_FRAMES
+                ]
 
         except Exception:
             logger.exception(f"Error processing detections on frame {frame_number}.")
